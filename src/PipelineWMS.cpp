@@ -19,7 +19,7 @@
 
 #include <iostream>
 
-#include "OneTaskAtATimeWMS.h"
+#include "PipelineWMS.h"
 
 WRENCH_LOG_CATEGORY(custom_wms, "Log category for OneTaskAtATimeWMS");
 
@@ -32,7 +32,7 @@ namespace wrench {
      * @param storage_services: a set of storage services available to store files
      * @param hostname: the name of the host on which to start the WMS
      */
-    OneTaskAtATimeWMS::OneTaskAtATimeWMS(const std::set<std::shared_ptr<ComputeService>> &compute_services,
+    PipelineWMS::PipelineWMS(const std::set<std::shared_ptr<ComputeService>> &compute_services,
                                          const std::set<std::shared_ptr<StorageService>> &storage_services,
                                          const std::string &hostname) : WMS(
             nullptr, nullptr,
@@ -49,7 +49,7 @@ namespace wrench {
      *
      * @throw std::runtime_error
      */
-    int OneTaskAtATimeWMS::main() {
+    int PipelineWMS::main() {
 
         /* Set the logging output to GREEN */
         TerminalOutput::setThisProcessLoggingColor(TerminalOutput::COLOR_GREEN);
@@ -91,6 +91,18 @@ namespace wrench {
                 /* Create the job  */
                 auto standard_job = job_manager->createStandardJob(ready_task, file_locations);
 
+                // Create service-specific arguments
+                std::map<std::string, std::string> batch_service_args;
+
+                //   The job will run no longer than 1 hour
+                batch_service_args["-t"] = "60";
+
+                //   The job will run on 1 compute node
+                batch_service_args["-N"] = "1";
+
+                //   The job will use 1 core on each compute node
+                batch_service_args["-c"] = "1";
+
                 /* Submit the job to the compute service */
                 WRENCH_INFO("Submitting the job to the compute service");
                 job_manager->submitJob(standard_job, compute_service, compute_args);
@@ -99,6 +111,8 @@ namespace wrench {
             /* Wait for a workflow execution event and process it. In this case we know that
                  * the event will be a StandardJobCompletionEvent, which is processed by the method
                  * processEventStandardJobCompletion() that this class overrides. */
+
+            printf("Wait for events\n\n");
             this->waitForAndProcessNextEvent();
         }
 
@@ -111,7 +125,7 @@ namespace wrench {
      *
      * @param event: the event
      */
-    void OneTaskAtATimeWMS::processEventStandardJobCompletion(std::shared_ptr<StandardJobCompletedEvent> event) {
+    void PipelineWMS::processEventStandardJobCompletion(std::shared_ptr<StandardJobCompletedEvent> event) {
         /* Retrieve the job that this event is for */
         auto job = event->standard_job;
         /* Retrieve the job's first (and in our case only) task */
@@ -124,7 +138,7 @@ namespace wrench {
      *
      * @param event: the event
      */
-    void OneTaskAtATimeWMS::processEventStandardJobFailure(std::shared_ptr<StandardJobFailedEvent> event) {
+    void PipelineWMS::processEventStandardJobFailure(std::shared_ptr<StandardJobFailedEvent> event) {
         // Retrieve the job that this event is for
         auto job = event->standard_job;
         std::cerr  << "Standard job failed ( cause: ";

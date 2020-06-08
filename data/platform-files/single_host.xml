@@ -3,8 +3,8 @@
 <platform version="4.1">
     <zone id="AS0" routing="Full">
         <host id="host01" speed="1Gf" core="32">
-            <prop id="ram" value="255GB"/>
-            <disk id="disk01" read_bw="500MBps" write_bw="500MBps">
+            <prop id="ram" value="10GB"/>
+            <disk id="disk01" read_bw="465MBps" write_bw="465MBps">
                 <prop id="size" value="450GB"/>
                 <prop id="mount" value="/"/>
             </disk>

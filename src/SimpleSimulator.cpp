@@ -10,7 +10,7 @@
 #include <wrench.h>
 #include "SimpleStandardJobScheduler.h"
 #include "SimpleWMS.h"
-#include "OneTaskAtATimeWMS.h"
+#include "PipelineWMS.h"
 
 static bool ends_with(const std::string &str, const std::string &suffix) {
     return str.size() >= suffix.size() && 0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix);
@@ -70,7 +70,8 @@ void export_output_exp1(wrench::SimulationOutput output, int num_tasks, std::str
     auto task_start = output.getTrace<wrench::SimulationTimestampTaskStart>();
     auto task_end = output.getTrace<wrench::SimulationTimestampTaskCompletion>();
 
-    FILE *log_file = fopen("timestamps_sim_exp1.csv", "w");
+    FILE *log_file = fopen(filename.c_str(), "w");
+    fprintf(log_file, "type, start, end\n");
 
     for (int i = 0; i < num_tasks; i++) {
 //        std::cerr << "Task " << read_end[i]->getContent()->getTask()->getID()
@@ -87,6 +88,32 @@ void export_output_exp1(wrench::SimulationOutput output, int num_tasks, std::str
 
         fprintf(log_file, "read, %lf, %lf\n", read_start[i]->getDate(), read_end[i]->getDate());
         fprintf(log_file, "write, %lf, %lf\n", write_start[i]->getDate(), write_end[i]->getDate());
+    }
+
+    fclose(log_file);
+}
+
+void export_output_exp2(wrench::SimulationOutput output, int num_tasks, std::string filename){
+    auto read_start = output.getTrace<wrench::SimulationTimestampFileReadStart>();
+    auto read_end = output.getTrace<wrench::SimulationTimestampFileReadCompletion>();
+    auto write_start = output.getTrace<wrench::SimulationTimestampFileWriteStart>();
+    auto write_end = output.getTrace<wrench::SimulationTimestampFileWriteCompletion>();
+    auto task_start = output.getTrace<wrench::SimulationTimestampTaskStart>();
+    auto task_end = output.getTrace<wrench::SimulationTimestampTaskCompletion>();
+
+    FILE *log_file = fopen(filename.c_str(), "w");
+    fprintf(log_file, "read_start, read_end, cpu_start, cpu_end, write_start, write_end\n");
+
+    for (int i = 0; i < num_tasks; i++) {
+        std::cerr << read_end[i]->getContent()->getTask()->getID()
+                  << " started at " << task_start[i]->getDate()
+                  << ", ended at " << task_end[i]->getDate()
+                  << ", completed in " << task_end[i]->getDate() - task_start[i]->getDate()
+                  << std::endl;
+
+        fprintf(log_file, "%lf, %lf, %lf, %lf, %lf, %lf\n", read_start[i]->getDate(), read_end[i]->getDate(),
+                read_end[i]->getDate(), write_start[i]->getDate(),
+                write_start[i]->getDate(), write_end[i]->getDate());
     }
 
     fclose(log_file);
@@ -111,9 +138,12 @@ int main(int argc, char **argv) {
     // The second argument is the workflow description file, written in XML using the DAX DTD
     char *workflow_file = argv[2];
 
+    int no_pipe = 1;
+
     // Reading and parsing the workflow description file to create a wrench::Workflow object
     std::cerr << "Loading workflow..." << std::endl;
     wrench::Workflow *workflow = workflow_exp1(workflow_file);
+//    wrench::Workflow *workflow = workflow_exp2(1, 3, 1, 0, 3000000000, 3000000000);
 
 
     std::cerr << "The workflow has " << workflow->getNumberOfTasks() << " tasks " << std::endl;
@@ -156,7 +186,7 @@ int main(int argc, char **argv) {
     }
 
     // Instantiate a WMS
-    auto wms = simulation.add(new wrench::OneTaskAtATimeWMS(compute_services, storage_services, wms_host));
+    auto wms = simulation.add(new wrench::PipelineWMS(compute_services, storage_services, wms_host));
     wms->addWorkflow(workflow);
 
     // Instantiate a file registry service
@@ -189,7 +219,8 @@ int main(int argc, char **argv) {
     }
     std::cerr << "Simulation done!" << std::endl;
 
-    export_output_exp1(simulation.getOutput(), workflow->getNumberOfTasks(), "timestamp_sim_exp1.csv");
+    export_output_exp1(simulation.getOutput(), workflow->getNumberOfTasks(),
+            "timestamp_sim_exp1_75gb.csv");
 
     return 0;
 }

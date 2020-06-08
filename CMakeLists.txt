@@ -18,8 +18,8 @@ include_directories(src/ ${SimGrid_INCLUDE_DIR}/include /usr/local/include /opt/
 set(SOURCE_FILES
        src/SimpleWMS.h
        src/SimpleWMS.cpp
-       src/OneTaskAtATimeWMS.h
-       src/OneTaskAtATimeWMS.cpp
+        src/PipelineWMS.h
+        src/PipelineWMS.cpp
        src/SimpleStandardJobScheduler.h
        src/SimpleStandardJobScheduler.cpp
        src/SimpleSimulator.cpp

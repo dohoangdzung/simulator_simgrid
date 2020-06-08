@@ -21,11 +21,11 @@ namespace wrench {
     /**
      *  @brief A Workflow Management System (WMS) implementation (inherits from WMS)
      */
-    class OneTaskAtATimeWMS : public WMS {
+    class PipelineWMS : public WMS {
 
     public:
         // Constructor
-        OneTaskAtATimeWMS(
+        PipelineWMS(
                   const std::set<std::shared_ptr<ComputeService>> &compute_services,
                   const std::set<std::shared_ptr<StorageService>> &storage_services,
                   const std::string &hostname);
